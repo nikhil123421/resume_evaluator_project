@@ -7,7 +7,7 @@ A RAG-style application that decomposes job descriptions into structured require
 ### Architecture & Internals
 
 - **Document Ingestion & Chunking** — PDF text extraction with PyPDF, followed by chunking to create smaller, retrievable evidence units.
-- **Dense Semantic Retrieval** — `BAAI/bge-base-en-v1.5` via Sentence Transformers, utilizing 768-dimensional normalized dense vectors, cosine similarity, and top-k retrieval to surface contextually relevant resume excerpts.
+- **Dense Semantic Retrieval** — Leveraged `BAAI/bge-base-en-v1.5` (768-dimensional) via Sentence Transformers with normalized vector representations, cosine similarity, and top-k retrieval to surface contextually relevant resume excerpts.
 - **Structured Information Extraction** — Groq-hosted LLM inference converts unstructured job descriptions into typed requirement objects, constrained by Pydantic schemas.
 - **Retrieval-Grounded Evaluation** — retrieved evidence is passed to an LLM for requirement level assessment, reducing reliance on keyword overlap and unsupported inference.
 - **Evidence-Based Classification** — each requirement receives a `Supported`, `Unverified`, or `Missing` status, with evidence quotes intended to make the assessment traceable to the source text.
