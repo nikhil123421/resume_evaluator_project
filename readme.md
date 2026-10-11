@@ -1,28 +1,26 @@
-# Resume Evaluator - https://resumeeeval.vercel.app/
+# Resume Evaluator — https://resumeeeval.vercel.app/
 
-**Evidence grounded resume evaluation using semantic retrieval, dense embeddings, and structured LLM inference.**
+**Evidence-grounded resume evaluation using semantic retrieval, dense embeddings, and structured LLM inference.**
 
-A RAG-style application that decomposes job descriptions into structured requirements, retrieves semantically relevant resume evidence, and evaluates requirement level coverage.
+A RAG-style pipeline that decomposes job descriptions into typed requirements, retrieves semantically relevant resume evidence, and scores requirement-level coverage. Every `Supported` verdict has to survive a server-side verbatim-quote check against the original resume text — or it gets downgraded and thrown out.
 
 ### Architecture & Internals
 
-- **Document Ingestion & Chunking** — PDF text extraction with PyPDF, followed by chunking to create smaller, retrievable evidence units.
-- **Dense Semantic Retrieval** — Leveraged `BAAI/bge-base-en-v1.5` (768-dimensional) via Sentence Transformers with normalized vector representations, cosine similarity, and top-k retrieval to surface contextually relevant resume excerpts.
-- **Structured Information Extraction** — Groq-hosted LLM inference converts unstructured job descriptions into typed requirement objects, constrained by Pydantic schemas.
-- **Retrieval-Grounded Evaluation** — retrieved evidence is passed to an LLM for requirement level assessment, reducing reliance on keyword overlap and unsupported inference.
-- **Evidence-Based Classification** — each requirement receives a `Supported`, `Unverified`, or `Missing` status, with evidence quotes intended to make the assessment traceable to the source text.
-- **Weighted Evidence Aggregation** — requirement level results are combined according to their assigned importance to calculate weighted evidence coverage, rather than a hiring probability score.
-- **Prompt & Input-Safety Engineering** — explicit evaluation policies, untrusted-document handling, and adversarial test cases designed to resist prompt injection.
-- **Hybrid AI Architecture** — probabilistic LLM judgments combined with deterministic application logic, typed data contracts, and a modular Python service layer.
+- **PDF Intake & Validation** — `%PDF-` signature check, encrypted-PDF rejection, page and character limits enforced before any text is trusted. Extraction via PyPDF.
+- **Structured Information Extraction** — Groq-hosted LLM inference converts job descriptions into typed requirement objects (Required / Preferred) and resumes into structured candidate data, constrained by Pydantic schemas.
+- **Evidence Chunking** — the *original* extracted PDF text is split into overlapping chunks. Not the LLM's summary. Evidence quotes always come from what the candidate actually wrote.
+- **Dense Semantic Retrieval** — a 1024-dimensional embedding model (`jina-embeddings-v5-text-small`), with `retrieval.passage` for resume chunks and `retrieval.query` for requirements. Concurrent embedding calls, cosine similarity, top-K retrieval.
+- **Retrieval-Grounded Verification** — retrieved chunks are passed to an LLM for per-requirement assessment. Every `Supported` must include an `evidence_quote` that appears verbatim in the retrieved excerpts; unmatched quotes are rejected server-side and downgraded to `Unverified`.
+- **Evidence-Based Classification** — each requirement receives `Supported`, `Unverified`, or `Missing`, with reasoning that has to be traceable to the source text.
+- **Weighted Evidence Aggregation** — Required = 2 points, Preferred = 1. Only `Supported` counts toward the numerator. Failed verifications stay in the denominator. No silent drops. Incomplete runs produce conservative scores, on purpose.
+- **Prompt & Input-Safety Engineering** — untrusted-document handling, injection-resistant extraction and scoring prompts, explicit policy on LLM-product-API vs AI-assisted-development, disjunctive/conjunctive/example-based requirement logic.
+- **Hybrid AI Architecture** — probabilistic LLM judgments wrapped in deterministic application logic, typed data contracts, and a modular Python service layer.
 
 ### Stack
 
-`Python` · `FastAPI` · `Pydantic` · `Groq API` · `Sentence Transformers` · `BAAI/bge-base-en-v1.5` · `PyPDF` · `React` · `TypeScript` · `Tailwind CSS`
+`Python` · `FastAPI` · `Pydantic` · `Groq API` · `jina-embeddings-v5-text-small` · `PyPDF` · `NumPy` · `httpx` · `React` · `TypeScript` · `Tailwind CSS`
 
 ### Core Principle
 
 **Semantic similarity is a retrieval signal, not proof of competence.**
-
-The system separates candidate evidence retrieval from requirement satisfaction, distinguishes missing information from demonstrated absence, and makes uncertainty visible instead of disguising it as a precise-looking score.
-
-*An evidence first approach to resume evaluation, not another keyword matcher, and not a hiring oracle.*
+**A quote that can't be found in the source text isn't evidence, it's a hallucination with good posture.**
