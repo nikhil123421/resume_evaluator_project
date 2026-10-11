@@ -180,10 +180,19 @@ export default function App() {
     setLoading(true);
 
     try {
-      const response = await fetch("/api/v1/evaluate", {
-        method: "POST",
-        body: formData,
-      });
+      const API_BASE_URL = import.meta.env.VITE_API_URL;
+
+      if (!API_BASE_URL) {
+        throw new Error("Backend URL is not configured.");
+      }
+
+      const response = await fetch(
+        `${API_BASE_URL.replace(/\/+$/, "")}/api/v1/evaluate`,
+        {
+          method: "POST",
+          body: formData,
+        }
+      );
 
       if (!response.ok) {
         const data = await response.json().catch(() => null);
