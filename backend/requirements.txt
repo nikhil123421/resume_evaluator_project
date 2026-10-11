@@ -1,7 +1,9 @@
 fastapi
-uvicorn
-python-dotenv
+uvicorn[standard]
 python-multipart
-pydantic
-groq
+python-dotenv
+pydantic>=2
+httpx
+numpy
 pypdf
+groq
