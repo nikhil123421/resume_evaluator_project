@@ -4,20 +4,25 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 Importance = Literal["Required", "Preferred"]
 EvaluationStatus = Literal["Supported", "Unverified", "Missing"]
 
+
 class StrictBaseModel(BaseModel):
     model_config = ConfigDict(
         str_strip_whitespace=True,
         extra="forbid",
     )
 
+
 # --- API input schemas ---
 class JobDescriptionInput(StrictBaseModel):
     raw_text: str = Field(min_length=30, max_length=30_000)
 
+
 # --- Structured extraction schemas ---
 class JobRequirement(StrictBaseModel):
-    skill_name: str = Field(min_length=1, max_length=200)
-    importance: Importance = "Required"
+    skill_name: str = Field(min_length=1, max_length=500)
+    # Nullable: the extractor prompt may legitimately not know the importance.
+    # The API layer defaults None -> "Preferred" after validation.
+    importance: Importance | None = None
 
 
 class ExtractedJobDescription(StrictBaseModel):
@@ -38,7 +43,9 @@ class Experience(StrictBaseModel):
 
 
 class ExtractedResume(StrictBaseModel):
-    name: str = Field(default="Unknown Candidate", max_length=200)
+    # Nullable: if the resume does not state a name, the API layer substitutes
+    # "Unknown Candidate". A non-nullable default would silently mislabel.
+    name: str | None = Field(default=None, max_length=200)
     email: str | None = Field(default=None, max_length=320)
     phone: str | None = Field(default=None, max_length=50)
     skills: list[str] = Field(default_factory=list, max_length=200)
@@ -49,10 +56,11 @@ class ExtractedResume(StrictBaseModel):
 
 
 # --- Requirement evaluation and API response schemas ---
-
 class RequirementEvaluation(StrictBaseModel):
-    requirement: str = Field(min_length=1, max_length=200)
-    importance: Importance = "Required"
+    # 500 chars so long JD bullets (e.g., Amazon "Cloud...and/or VCS") survive.
+    requirement: str = Field(min_length=1, max_length=500)
+    # Nullable: the scorer assigns this from the caller's input after parsing.
+    importance: Importance | None = None
     status: EvaluationStatus
     evidence_quote: str | None = Field(default=None, max_length=2000)
     reasoning: str = Field(min_length=1, max_length=2000)

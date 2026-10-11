@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import os
 import io
@@ -129,7 +130,8 @@ def _calculate_weighted_score(
     Calculate weighted requirement coverage.
 
     Required = 2 points; Preferred = 1 point.
-    Only Supported evaluations earn points.
+    Only Supported evaluations earn points. A None importance is treated as
+    Preferred (the documented default) to avoid inflating the score.
     """
 
     if not evaluations:
@@ -220,17 +222,16 @@ async def evaluate_candidate(
             detail="No usable text could be extracted from the resume.",
         )
 
-    # 5. Embed all resume chunks in one batch.
-    # Document passages are embedded without the BGE query instruction.
-    try:
-        chunk_vectors = await get_embeddings(chunks, is_query=False)
+    # 5. Embed resume chunks and requirement queries in parallel.
+    # Resume passages use Jina's "retrieval.passage" task; requirements use
+    # "retrieval.query". The two calls are independent and can be issued
+    # concurrently.
+    requirement_texts = [req.skill_name for req in requirements]
 
-        # All requirements are query-like inputs, so embed them together
-        # with the recommended BGE query instruction.
-        requirement_texts = [req.skill_name for req in requirements]
-        requirement_vectors = await get_embeddings(
-            requirement_texts,
-            is_query=True,
+    try:
+        chunk_vectors, requirement_vectors = await asyncio.gather(
+            get_embeddings(chunks, is_query=False),
+            get_embeddings(requirement_texts, is_query=True),
         )
     except Exception as exc:
         logger.exception("Embedding generation failed.")
@@ -259,13 +260,14 @@ async def evaluate_candidate(
 
     for index, req in enumerate(requirements):
         requirement_text = req.skill_name
-        importance = req.importance
+        # Extraction guarantees a concrete importance value here.
+        importance = req.importance or "Preferred"
 
+        # top_k uses TOP_K_CHUNKS from the scorer module default.
         top_chunks = retrieve_top_chunks(
             requirement_vector=requirement_vectors[index],
             chunk_vectors=chunk_vectors,
             chunks=chunks,
-            top_k=3,
         )
 
         try:
