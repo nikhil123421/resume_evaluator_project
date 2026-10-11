@@ -2,7 +2,7 @@
 
 **Evidence grounded resume evaluation using semantic retrieval, dense embeddings, and structured LLM inference.**
 
-A RAG-style application that decomposes job descriptions into structured requirements, retrieves semantically relevant resume evidence, and evaluates requirement-level coverage. No naive keyword counting. No pretending a similarity score predicts hiring outcomes.
+A RAG-style application that decomposes job descriptions into structured requirements, retrieves semantically relevant resume evidence, and evaluates requirement level coverage. No naive keyword counting. No pretending a similarity score predicts hiring outcomes.
 
 ### Architecture & Internals
 
