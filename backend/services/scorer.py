@@ -556,8 +556,6 @@ Return JSON only. No prose, no markdown fences, no explanations.
 
     result = RequirementEvaluation.model_validate_json(content)
 
-    # Caller-authoritative fields. Always override to protect against the
-    # model drifting on importance or paraphrasing the requirement.
     result.requirement = requirement
     result.importance = importance
 
