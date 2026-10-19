@@ -2,7 +2,7 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 Importance = Literal["Required", "Preferred"]
-EvaluationStatus = Literal["Supported", "Unverified", "Missing"]
+EvaluationStatus = Literal["Supported", "Partial", "Missing"]
 
 
 class StrictBaseModel(BaseModel):
@@ -62,6 +62,7 @@ class RequirementEvaluation(StrictBaseModel):
     # Nullable: the scorer assigns this from the caller's input after parsing.
     importance: Importance | None = None
     status: EvaluationStatus
+    match_percentage: int = Field(default=100, ge=0, le=100)
     evidence_quote: str | None = Field(default=None, max_length=2000)
     reasoning: str = Field(min_length=1, max_length=2000)
 

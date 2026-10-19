@@ -3,7 +3,8 @@ import { useEffect, useRef, useState } from "react";
 type Evaluation = {
   requirement: string;
   importance: "Required" | "Preferred";
-  status: "Supported" | "Unverified" | "Missing";
+  status: "Supported" | "Partial" | "Missing";
+  match_percentage?: number;
   evidence_quote: string | null;
   reasoning: string;
 };
@@ -93,13 +94,13 @@ function UploadIcon() {
 function StatusBadge({ status }: { status: Evaluation["status"] }) {
   const styles = {
     Supported: "border-white bg-white text-black",
-    Unverified: "border-white/35 bg-transparent text-white/85",
+    Partial: "border-white/50 bg-white/10 text-white",
     Missing: "border-white/12 bg-transparent text-white/40",
   };
 
   const dot = {
     Supported: "bg-black",
-    Unverified: "bg-white",
+    Partial: "bg-white/80",
     Missing: "bg-white/30",
   };
 
@@ -226,9 +227,9 @@ export default function App() {
   const supported =
     result?.evaluations.filter((item) => item.status === "Supported").length ??
     0;
-  const unverified =
-    result?.evaluations.filter((item) => item.status === "Unverified")
-      .length ?? 0;
+  const partial =
+    result?.evaluations.filter((item) => item.status === "Partial").length ??
+    0;
   const missing =
     result?.evaluations.filter((item) => item.status === "Missing").length ??
     0;
@@ -630,9 +631,9 @@ export default function App() {
                       color: "bg-white",
                     },
                     {
-                      label: "Unverified",
-                      count: unverified,
-                      color: "bg-white/45",
+                      label: "Partial",
+                      count: partial,
+                      color: "bg-white/50",
                     },
                     {
                       label: "Missing",
@@ -738,6 +739,11 @@ export default function App() {
                           </h4>
                           <p className="mt-2.5 text-[9px] uppercase tracking-[0.20em] text-white/40">
                             {item.importance} requirement
+                            {typeof item.match_percentage === "number" && (
+                              <span className="ml-2 font-mono text-white/60">
+                                • {item.match_percentage}% match
+                              </span>
+                            )}
                           </p>
                         </div>
 

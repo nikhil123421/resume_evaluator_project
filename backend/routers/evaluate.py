@@ -114,7 +114,8 @@ def _make_failed_evaluation(
     return RequirementEvaluation(
         requirement=requirement,
         importance=importance,
-        status="Unverified",
+        status="Missing",
+        match_percentage=0,
         evidence_quote=None,
         reasoning=(
             "This requirement could not be verified because the verification "
@@ -138,14 +139,17 @@ def _calculate_weighted_score(
         return 0
 
     total_weight = 0
-    supported_weight = 0
+    supported_weight = 0.0
 
     for evaluation in evaluations:
         weight = 2 if evaluation.importance == "Required" else 1
         total_weight += weight
-
-        if evaluation.status == "Supported":
-            supported_weight += weight
+        pct = (
+            evaluation.match_percentage
+            if evaluation.match_percentage is not None
+            else (100 if evaluation.status == "Supported" else 0)
+        )
+        supported_weight += weight * (pct / 100.0)
 
     if total_weight == 0:
         return 0
@@ -281,7 +285,7 @@ async def evaluate_candidate(
         except Exception:
             # Keep the requirement in the denominator. Never silently skip it.
             logger.warning(
-                "Verification failed for a requirement; marking Unverified."
+                "Verification failed for a requirement; marking Missing."
             )
             evaluations.append(
                 _make_failed_evaluation(requirement_text, importance)
