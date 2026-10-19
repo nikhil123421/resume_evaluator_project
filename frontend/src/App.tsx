@@ -24,6 +24,12 @@ const cn = (...classes: (string | false | undefined)[]) =>
 /*  UI-only helpers (no business logic)                                */
 /* ------------------------------------------------------------------ */
 
+function formatElapsed(seconds: number) {
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  return `${mins}:${secs.toString().padStart(2, "0")}`;
+}
+
 function useCountUp(target: number, duration = 1400) {
   const [value, setValue] = useState(0);
   useEffect(() => {
@@ -127,9 +133,20 @@ export default function App() {
   const [result, setResult] = useState<MatchResult | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [dragging, setDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const resultsRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    if (!loading) return;
+
+    const timer = window.setInterval(() => {
+      setElapsedSeconds((s) => s + 1);
+    }, 1000);
+
+    return () => window.clearInterval(timer);
+  }, [loading]);
 
   function selectResume(file?: File) {
     if (!file) return;
@@ -178,6 +195,7 @@ export default function App() {
     formData.append("job_description", jobDescription);
     formData.append("resume_pdf", resume);
 
+    setElapsedSeconds(0);
     setLoading(true);
 
     try {
@@ -514,29 +532,47 @@ export default function App() {
               </p>
             </div>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="group relative flex min-h-14 w-full items-center justify-between gap-10 overflow-hidden bg-white px-6 py-4 text-left text-black transition-all duration-300 hover:bg-white/90 hover:shadow-[0_0_40px_-10px_rgba(255,255,255,0.4)] disabled:cursor-not-allowed disabled:opacity-40 sm:w-auto sm:min-w-[260px]"
-            >
-              {/* sweeping shimmer when loading */}
-              {loading && (
-                <span className="pointer-events-none absolute inset-0 overflow-hidden">
-                  <span className="a-scan absolute inset-y-0 w-1/3 bg-gradient-to-r from-transparent via-black/10 to-transparent" />
-                </span>
-              )}
-
-              <span className="relative text-[10px] font-semibold uppercase tracking-[0.20em]">
-                {loading ? "Analysing your profile..." : "Analyse my resume"}
-              </span>
-              <span className="relative transition-transform duration-300 group-hover:translate-x-1 group-hover:-translate-y-0.5">
-                {loading ? (
-                  <span className="inline-block h-4 w-4 animate-spin rounded-full border border-black/25 border-t-black" />
-                ) : (
-                  <ArrowIcon diagonal />
+            <div className="flex w-full flex-col items-stretch gap-2.5 sm:w-auto sm:items-end">
+              <button
+                type="submit"
+                disabled={loading}
+                className="group relative flex min-h-14 w-full items-center justify-between gap-10 overflow-hidden bg-white px-6 py-4 text-left text-black transition-all duration-300 hover:bg-white/90 hover:shadow-[0_0_40px_-10px_rgba(255,255,255,0.4)] disabled:cursor-not-allowed disabled:opacity-40 sm:w-auto sm:min-w-[260px]"
+              >
+                {/* sweeping shimmer when loading */}
+                {loading && (
+                  <span className="pointer-events-none absolute inset-0 overflow-hidden">
+                    <span className="a-scan absolute inset-y-0 w-1/3 bg-gradient-to-r from-transparent via-black/10 to-transparent" />
+                  </span>
                 )}
-              </span>
-            </button>
+
+                <div className="relative flex flex-col text-left">
+                  <span className="text-[10px] font-semibold uppercase tracking-[0.20em]">
+                    {loading ? "Analysing your profile..." : "Analyse my resume"}
+                  </span>
+                  {loading && (
+                    <span className="mt-1 text-[9px] font-medium tracking-normal text-black/60 normal-case">
+                      Takes up to 5–7 minutes
+                    </span>
+                  )}
+                </div>
+                <span className="relative transition-transform duration-300 group-hover:translate-x-1 group-hover:-translate-y-0.5">
+                  {loading ? (
+                    <span className="inline-block h-4 w-4 animate-spin rounded-full border border-black/25 border-t-black" />
+                  ) : (
+                    <ArrowIcon diagonal />
+                  )}
+                </span>
+              </button>
+
+              {loading && (
+                <p className="a-fade-in flex items-center gap-2 text-[11px] text-white/50 tracking-wide text-left sm:text-right">
+                  <span className="inline-block h-1.5 w-1.5 rounded-full bg-white/70 animate-pulse" />
+                  <span>
+                    In-depth evaluation in progress ({formatElapsed(elapsedSeconds)}) · Please keep this tab open
+                  </span>
+                </p>
+              )}
+            </div>
           </div>
         </form>
 
